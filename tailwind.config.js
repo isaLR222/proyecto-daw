@@ -11,6 +11,11 @@ export default {
 
     theme: {
         extend: {
+            colors:{
+                fondo: '#702970',
+                tarjeta: '#4a004d',
+                colorInputs:'#aa1a46',
+            },
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
