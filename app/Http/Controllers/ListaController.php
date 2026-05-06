@@ -15,7 +15,7 @@ class ListaController extends Controller
     public function index()
     {
         $listas=Lista::where('user_id', auth()->id())->get();
-        return view('lista.index', compact('listas'));
+        return view('listas.index', compact('listas'));
     }
 
     /**
@@ -23,7 +23,7 @@ class ListaController extends Controller
      */
     public function create()
     {
-        return view('lista.create');
+        return view('listas.create');
     }
 
     /**
