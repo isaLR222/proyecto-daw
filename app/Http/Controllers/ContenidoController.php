@@ -13,7 +13,7 @@ class ContenidoController extends Controller
      */
     public function index(Request $request) //porque quiero hacer un radio para selecionar entre peliculas, libros o "mi contenido"
     {
-        $filtro = $request->input('filtro', 'pelis'); 
+        $filtro = $request->input('filtro', 'pelis');
         $peliculas = [];
         $libros = [];
         $mios = [];
@@ -47,6 +47,62 @@ class ContenidoController extends Controller
 
         return view('contenido.index', compact('filtro', 'peliculas', 'libros', 'mios'));
     }
+
+    public function peliculas()
+    {
+        $apiKey = env('TMDB_KEY');
+
+        $response = Http::get('https://api.themoviedb.org/3/movie/popular', [
+            'api_key' => $apiKey,
+            'language' => 'es-ES'
+        ])->json();
+
+        $peliculas = collect($response['results'] ?? [])->map(function ($p) {
+            return [
+                'id' => $p['id'],
+                'titulo' => $p['title'],
+                'descripcion' => $p['overview'],
+                'imagen' => "https://image.tmdb.org/t/p/w500" . $p['poster_path']
+            ];
+        });
+        return response()->json($peliculas);
+    }
+
+    public function libros()
+{
+    $url = "https://openlibrary.org/search.json?language=spa&q=bestseller";
+
+    $response = Http::get($url);
+
+    $docs = $response->json()['docs'] ?? [];
+
+    return collect($docs)->map(function ($d) {
+        return [
+            'id' => $d['key'] ?? null,
+            'titulo' => $d['title'] ?? 'Sin título',
+            'imagen' => isset($d['cover_i'])
+                ? "https://covers.openlibrary.org/b/id/{$d['cover_i']}-L.jpg"
+                : null
+        ];
+    });
+}
+
+
+  public function misContenidos()
+{
+    $mios = Contenido::where('user_id', auth()->id())->get();
+
+    $data = $mios->map(function ($c) {
+        return [
+            'id' => $c->id,
+            'titulo' => $c->titulo,
+            'descripcion' => $c->sinopsis ?? 'Sin descripción',
+            'imagen' => $c->imagen ?? '/img/no-image.png'
+        ];
+    });
+
+    return response()->json($data);
+}
 
     public function guardarDesdeAPI(Request $request)
     {
