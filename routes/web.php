@@ -90,5 +90,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+    //apis
+Route::prefix('api')->group(function () {
+    Route::get('/peliculas', [ContenidoController::class, 'peliculas']);
+    Route::get('/libros', [ContenidoController::class, 'libros']);
+    Route::get('/mis-contenidos', [ContenidoController::class, 'misContenidos']);
+});
 
 require __DIR__.'/auth.php';
+    
