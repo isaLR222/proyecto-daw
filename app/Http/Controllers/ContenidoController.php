@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Http;
 class ContenidoController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Vista principal con filtro (pelis, libros, mios)
      */
-    public function index(Request $request) //porque quiero hacer un radio para selecionar entre peliculas, libros o "mi contenido"
+    public function index(Request $request)
     {
         $filtro = $request->input('filtro', 'pelis');
         $peliculas = [];
@@ -21,34 +21,28 @@ class ContenidoController extends Controller
         switch ($filtro) {
 
             case 'pelis':
-                $peliculas = Http::get('https://api.themoviedb.org/3/movie/popular', [
-                    'api_key' => env('TMDB_KEY'),
-                    'language' => 'es-ES'
-                ])->json()['results'] ?? [];
+                $peliculas = $this->getPeliculas();
                 break;
 
             case 'libros':
-                $libros = Http::get('https://www.googleapis.com/books/v1/volumes', [
-                    'q' => 'popular books',
-                    'langRestrict' => 'es'
-                ])->json()['items'] ?? [];
+                $libros = $this->getLibros();
                 break;
 
             case 'mios':
-                $mios = Contenido::whereHas('actividad', function ($q) {
-                    $q->where('user_id', auth()->id());
-                })
-                    ->orWhereHas('listas', function ($q) {
-                        $q->where('user_id', auth()->id());
-                    })
-                    ->get();
+                $mios = Contenido::where('user_id', auth()->id())->get();
                 break;
         }
 
         return view('contenido.index', compact('filtro', 'peliculas', 'libros', 'mios'));
     }
 
+    /*api películas*/ 
     public function peliculas()
+    {
+        return response()->json($this->getPeliculas());
+    }
+
+    private function getPeliculas()
     {
         $apiKey = env('TMDB_KEY');
 
@@ -57,53 +51,59 @@ class ContenidoController extends Controller
             'language' => 'es-ES'
         ])->json();
 
-        $peliculas = collect($response['results'] ?? [])->map(function ($p) {
+        return collect($response['results'] ?? [])->map(function ($p) {
             return [
                 'id' => $p['id'],
                 'titulo' => $p['title'],
                 'descripcion' => $p['overview'],
-                'imagen' => "https://image.tmdb.org/t/p/w500" . $p['poster_path']
+                'imagen' => $p['poster_path']
+                    ? "https://image.tmdb.org/t/p/w500{$p['poster_path']}"
+                    : null
             ];
         });
-        return response()->json($peliculas);
     }
 
+    /*api libros*/ 
     public function libros()
-{
-    $url = "https://openlibrary.org/search.json?language=spa&q=bestseller";
+    {
+        return response()->json($this->getLibros());
+    }
 
-    $response = Http::get($url);
+    private function getLibros()
+    {
+        $url = "https://openlibrary.org/search.json?language=spa&q=bestseller";
 
-    $docs = $response->json()['docs'] ?? [];
+        $response = Http::get($url)->json();
 
-    return collect($docs)->map(function ($d) {
-        return [
-            'id' => $d['key'] ?? null,
-            'titulo' => $d['title'] ?? 'Sin título',
-            'imagen' => isset($d['cover_i'])
-                ? "https://covers.openlibrary.org/b/id/{$d['cover_i']}-L.jpg"
-                : null
-        ];
-    });
-}
+        return collect($response['docs'] ?? [])->map(function ($d) {
+            return [
+                'id' => $d['key'] ?? null,
+                'titulo' => $d['title'] ?? 'Sin título',
+                'imagen' => isset($d['cover_i'])
+                    ? "https://covers.openlibrary.org/b/id/{$d['cover_i']}-L.jpg"
+                    : null
+            ];
+        });
+    }
 
+    /*acceder al contenido guardado en BD*/
+    public function misContenidos()
+    {
+        $mios = Contenido::where('user_id', auth()->id())->get();
 
-  public function misContenidos()
-{
-    $mios = Contenido::where('user_id', auth()->id())->get();
+        return response()->json(
+            $mios->map(function ($c) {
+                return [
+                    'id' => $c->id,
+                    'titulo' => $c->titulo,
+                    'descripcion' => $c->sinopsis ?? 'Sin descripción',
+                    'imagen' => $c->imagen ?? '/img/no-image.png'
+                ];
+            })
+        );
+    }
 
-    $data = $mios->map(function ($c) {
-        return [
-            'id' => $c->id,
-            'titulo' => $c->titulo,
-            'descripcion' => $c->sinopsis ?? 'Sin descripción',
-            'imagen' => $c->imagen ?? '/img/no-image.png'
-        ];
-    });
-
-    return response()->json($data);
-}
-
+    /*Guardar contenido desde API*/
     public function guardarDesdeAPI(Request $request)
     {
         $data = $request->validate([
@@ -120,53 +120,66 @@ class ContenidoController extends Controller
         return redirect()->route('index')->with('success', 'Contenido añadido a tu biblioteca.');
     }
 
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    /* Mostrar contenido guardado en BD */
+    public function showMiContenido(string $id)
     {
         $contenido = Contenido::findOrFail($id);
         return view('contenido.show', compact('contenido'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    /* Mostrar película desde api*/
+    public function showPeliculaAPI($id)
     {
-        //
+        $apiKey = env('TMDB_KEY');
+
+        $url = "https://api.themoviedb.org/3/movie/{$id}?api_key={$apiKey}&language=es-ES";
+
+        $data = Http::get($url)->json();
+
+        if (!$data || (isset($data['success']) && $data['success'] === false)) {
+            abort(404, "Película no encontrada");
+        }
+
+        $pelicula = [
+            'id' => $data['id'],
+            'titulo' => $data['title'],
+            'descripcion' => $data['overview'],
+            'imagen' => "https://image.tmdb.org/t/p/w500{$data['poster_path']}",
+            'fecha' => $data['release_date'],
+            'generos' => array_column($data['genres'], 'name'),
+        ];
+
+        return view('contenido.show-pelicula', compact('pelicula'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    /* Mostrar libro desde api*/
+    public function showLibroAPI($id)
     {
-        //
-    }
+        $id = urldecode($id);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        $url = "https://openlibrary.org{$id}.json";
+
+        $data = Http::get($url)->json();
+
+        if (!$data) {
+            abort(404, "Libro no encontrado");
+        }
+
+        $imagen = isset($data['covers'][0])
+            ? "https://covers.openlibrary.org/b/id/{$data['covers'][0]}-L.jpg"
+            : null;
+
+        $libro = [
+            'id' => $id,
+            'titulo' => $data['title'] ?? 'Sin título',
+            'descripcion' => $data['description']['value']
+                ?? $data['description']
+                ?? 'Sin descripción',
+            'imagen' => $imagen,
+            'temas' => $data['subjects'] ?? [],
+            'fecha' => $data['created']['value'] ?? null,
+        ];
+
+        return view('contenido.show-libro', compact('libro'));
     }
 }
