@@ -27,9 +27,11 @@ class ActividadController extends Controller
         $data = $request->validate([
             'tipo' => 'required|string', // pelicula o libro
             'api_id' => 'required|string',
-            'estado' => 'required|string',
-            'valoracion' => 'nullable|integer|min:1|max:10',
-            'comentario' => 'nullable|string'
+            'estado' => 'nullable|string',
+            'valoracion' => 'nullable|integer|min:1|max:5',
+            'comentario' => 'nullable|string',
+            'favorito' => 'nullable|boolean'
+
         ]);
 
         // Para obtener datos desde la API
@@ -53,21 +55,31 @@ class ActividadController extends Controller
         }
 
         if ($data['tipo'] === 'libro') {
-            $apiData = Http::get("https://www.googleapis.com/books/v1/volumes/{$data['api_id']}")
-                ->json()['volumeInfo'];
+            $apiData = Http::get("https://openlibrary.org/works/{$data['api_id']}.json")->json();
+            $coverId = $apiData['covers'][0] ?? null;
+            $thumbnail = $coverId
+                ? "https://covers.openlibrary.org/b/id/{$coverId}-L.jpg"
+                : null;
+            $descripcion = null;
+            if (isset($apiData['description'])) {
+                $descripcion = is_array($apiData['description'])
+                    ? ($apiData['description']['value'] ?? null)
+                    : $apiData['description'];
+            }
 
             $contenidoData = [
-                'titulo' => $apiData['title'],
+                'titulo' => $apiData['title'] ?? 'Título desconocido',
                 'tipo' => 'libro',
-                'fecha_lanzamiento' => $apiData['publishedDate'] ?? null,
-                'sinopsis' => $apiData['description'] ?? null,
-                'categoria' => $apiData['categories'][0] ?? null,
+                'fecha_lanzamiento' => $apiData['created']['value'] ?? null,
+                'sinopsis' => $descripcion,
+                'categoria' => $apiData['subjects'][0] ?? null,
                 'detalles' => [
-                    'thumbnail' => $apiData['imageLinks']['thumbnail'] ?? null,
-                    'google_id' => $data['api_id']
+                    'thumbnail' => $thumbnail,
+                    'openlibrary_id' => $data['api_id']
                 ]
             ];
         }
+
 
         // Guardar contenido en BD si no existe
         $contenido = Contenido::firstOrCreate(
@@ -75,14 +87,27 @@ class ActividadController extends Controller
             $contenidoData
         );
 
-        // Crear actividad
+        /*// Crear actividad
         Actividad::create([
             'user_id' => auth()->id(),
             'contenido_id' => $contenido->id,
             'estado' => $data['estado'],
             'valoracion' => $data['valoracion'] ?? null,
             'comentario' => $data['comentario'] ?? null
-        ]);
+        ]);*/
+        Actividad::updateOrCreate(
+            [
+                'user_id' => auth()->id(),
+                'contenido_id' => $contenido->id
+            ],
+            [
+                'estado' => $data['estado'] ?? $actividad->estado ?? 'no_visto',
+                'valoracion' => $data['valoracion'] ?? null,
+                'comentario' => $data['comentario'] ?? null,
+                'favorito' => $data['favorito'] ?? false
+            ]
+        );
+
 
         return back();
     }
@@ -111,11 +136,11 @@ class ActividadController extends Controller
      */
     public function update(Request $request, string $id)
     {
-          $actividad = Actividad::where('user_id', auth()->id())->findOrFail($id);
+        $actividad = Actividad::where('user_id', auth()->id())->findOrFail($id);
 
         $data = $request->validate([
             'estado' => 'required|string',
-            'valoracion' => 'nullable|integer|min:1|max:10',
+            'valoracion' => 'nullable|integer|min:1|max:5',
             'comentario' => 'nullable|string'
         ]);
 

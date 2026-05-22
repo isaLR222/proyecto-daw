@@ -88,9 +88,11 @@
                 },
 
                 async cargarMios() {
-                    const res = await fetch("/api/mios");
-                    this.resultados = await res.json();
-                },
+    const res = await fetch("/api/mis-contenidos");
+    const data = await res.json();
+    console.log("Mios:", data);
+    this.resultados = data;
+},
 
                 rutaShow(item) {
                     if (this.filtro === "Películas") {

@@ -28,7 +28,9 @@ Route::middleware('auth')->group(function () {
     ->whereNumber('id');
         //de la api libro
     Route::get('/contenido/libro/{id}', [ContenidoController::class, 'showLibroAPI'])
-    ->name('contenido.libro.show');
+    ->name('contenido.libro.show')
+    ->where('id', '.*');
+
         //si esta en la BD
     Route::get('contenido/{contenido}',[ContenidoController::class, 'showMiContenido'])
         ->name('contenido.show')
@@ -67,7 +69,7 @@ Route::middleware('auth')->group(function () {
         ->name('actividades.index');
         //store
     Route::post('/actividad',[ActividadController::class, 'store'])
-        ->name('actividades.store');
+        ->name('actividad.store');
         //La actividad de uno en concreto
     Route::get('actividad/{actividad}',[ActividadController::class, 'show'])
         ->name('actividades.show')
@@ -91,7 +93,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
     //apis
-Route::prefix('api')->group(function () {
+Route::middleware('auth')->prefix('api')->group(function () {
     Route::get('/peliculas', [ContenidoController::class, 'peliculas']);
     Route::get('/libros', [ContenidoController::class, 'libros']);
     Route::get('/mis-contenidos', [ContenidoController::class, 'misContenidos']);

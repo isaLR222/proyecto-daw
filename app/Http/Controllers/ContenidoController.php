@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Contenido;
 use Illuminate\Support\Facades\Http;
+use App\Models\Actividad;
 
 class ContenidoController extends Controller
 {
@@ -36,7 +37,7 @@ class ContenidoController extends Controller
         return view('contenido.index', compact('filtro', 'peliculas', 'libros', 'mios'));
     }
 
-    /*api películas*/ 
+    /*api películas*/
     public function peliculas()
     {
         return response()->json($this->getPeliculas());
@@ -45,13 +46,19 @@ class ContenidoController extends Controller
     private function getPeliculas()
     {
         $apiKey = env('TMDB_KEY');
+        $peliculas = collect();
 
-        $response = Http::get('https://api.themoviedb.org/3/movie/popular', [
-            'api_key' => $apiKey,
-            'language' => 'es-ES'
-        ])->json();
+        for ($page = 1; $page <= 5; $page++) {
+            $response = Http::get('https://api.themoviedb.org/3/movie/popular', [
+                'api_key' => $apiKey,
+                'language' => 'es-ES',
+                'page' => $page
+            ])->json();
 
-        return collect($response['results'] ?? [])->map(function ($p) {
+            $peliculas = $peliculas->merge($response['results'] ?? []);
+        }
+
+        return $peliculas->map(function ($p) {
             return [
                 'id' => $p['id'],
                 'titulo' => $p['title'],
@@ -62,8 +69,7 @@ class ContenidoController extends Controller
             ];
         });
     }
-
-    /*api libros*/ 
+    /*api libros*/
     public function libros()
     {
         return response()->json($this->getLibros());
@@ -121,25 +127,26 @@ class ContenidoController extends Controller
     }
 
     /* Mostrar contenido guardado en BD */
-    public function showMiContenido(string $id)
-    {
-        $contenido = Contenido::findOrFail($id);
-        return view('contenido.show', compact('contenido'));
-    }
+public function showMiContenido($id)
+{
+    $contenido = Contenido::where('user_id', auth()->id())
+        ->where('id', $id)
+        ->firstOrFail();
+
+    return view('contenido.show-mi-contenido', compact('contenido'));
+}
+
+
 
     /* Mostrar película desde api*/
     public function showPeliculaAPI($id)
     {
         $apiKey = env('TMDB_KEY');
-
         $url = "https://api.themoviedb.org/3/movie/{$id}?api_key={$apiKey}&language=es-ES";
-
         $data = Http::get($url)->json();
-
         if (!$data || (isset($data['success']) && $data['success'] === false)) {
             abort(404, "Película no encontrada");
         }
-
         $pelicula = [
             'id' => $data['id'],
             'titulo' => $data['title'],
@@ -148,16 +155,24 @@ class ContenidoController extends Controller
             'fecha' => $data['release_date'],
             'generos' => array_column($data['genres'], 'name'),
         ];
-
-        return view('contenido.show-pelicula', compact('pelicula'));
+        // Recuperar actividad previa del usuario
+        $actividad = Actividad::where('user_id', auth()->id())
+            ->whereHas('contenido', function ($q) use ($id) {
+                $q->where('detalles->tmdb_id', $id);
+            })
+            ->first();
+        return view('contenido.show-pelicula', [
+            'pelicula' => $pelicula,
+            'actividad' => $actividad
+        ]);
     }
 
     /* Mostrar libro desde api*/
     public function showLibroAPI($id)
     {
-        $id = urldecode($id);
+        $id = ltrim($id, '/'); // elimina barra inicial si la trae
+        $url = "https://openlibrary.org/{$id}.json";
 
-        $url = "https://openlibrary.org{$id}.json";
 
         $data = Http::get($url)->json();
 

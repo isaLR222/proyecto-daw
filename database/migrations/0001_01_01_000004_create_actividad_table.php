@@ -30,6 +30,8 @@ return new class extends Migration
 
     $table->tinyInteger('valoracion')->nullable(); 
     $table->text('comentario')->nullable();
+    
+     $table->boolean('favorito')->default(false);
 
     $table->timestamps();
 });
