@@ -91,23 +91,32 @@ class ContenidoController extends Controller
             ];
         });
     }
+public function indexMios()
+{
+    $contenidos = Contenido::where('user_id', auth()->id())->get();
+
+    return view('contenido.mios-index', compact('contenidos'));
+}
+
 
     /*acceder al contenido guardado en BD*/
     public function misContenidos()
-    {
-        $mios = Contenido::where('user_id', auth()->id())->get();
-
-        return response()->json(
-            $mios->map(function ($c) {
+{
+    return response()->json(
+        Contenido::where('user_id', auth()->id())
+            ->get()
+            ->map(function ($c) {
                 return [
                     'id' => $c->id,
                     'titulo' => $c->titulo,
                     'descripcion' => $c->sinopsis ?? 'Sin descripción',
-                    'imagen' => $c->imagen ?? '/img/no-image.png'
+                    'imagen' => $c->detalles['imagen'] ?? '/img/no-image.png'
                 ];
             })
-        );
-    }
+    );
+}
+
+
 
     /*Guardar contenido desde API*/
     public function guardarDesdeAPI(Request $request)
@@ -170,31 +179,40 @@ public function showMiContenido($id)
     /* Mostrar libro desde api*/
     public function showLibroAPI($id)
     {
-        $id = ltrim($id, '/'); // elimina barra inicial si la trae
-        $url = "https://openlibrary.org/{$id}.json";
+       $id = ltrim($id, '/'); 
+    $url = "https://openlibrary.org/{$id}.json";
 
+    $data = Http::get($url)->json();
 
-        $data = Http::get($url)->json();
-
-        if (!$data) {
-            abort(404, "Libro no encontrado");
-        }
-
-        $imagen = isset($data['covers'][0])
-            ? "https://covers.openlibrary.org/b/id/{$data['covers'][0]}-L.jpg"
-            : null;
-
-        $libro = [
-            'id' => $id,
-            'titulo' => $data['title'] ?? 'Sin título',
-            'descripcion' => $data['description']['value']
-                ?? $data['description']
-                ?? 'Sin descripción',
-            'imagen' => $imagen,
-            'temas' => $data['subjects'] ?? [],
-            'fecha' => $data['created']['value'] ?? null,
-        ];
-
-        return view('contenido.show-libro', compact('libro'));
+    if (!$data) {
+        abort(404, "Libro no encontrado");
     }
+
+    $imagen = isset($data['covers'][0])
+        ? "https://covers.openlibrary.org/b/id/{$data['covers'][0]}-L.jpg"
+        : null;
+
+    $libro = [
+        'id' => $id,
+        'titulo' => $data['title'] ?? 'Sin título',
+        'descripcion' => $data['description']['value']
+            ?? $data['description']
+            ?? 'Sin descripción',
+        'imagen' => $imagen,
+        'generos' => $data['subjects'] ?? [],   
+        'fecha' => $data['created']['value'] ?? null,
+    ];
+
+    
+    $actividad = Actividad::where('user_id', auth()->id())
+    ->whereHas('contenido', function ($q) use ($id) {
+        $q->where('detalles->openlibrary_id', $id);
+    })
+    ->first();
+
+    return view('contenido.show-libro', [
+        'libro' => $libro,
+        'actividad' => $actividad
+    ]);
+}
 }

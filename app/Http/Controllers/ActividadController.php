@@ -23,94 +23,92 @@ class ActividadController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            'tipo' => 'required|string', // pelicula o libro
-            'api_id' => 'required|string',
-            'estado' => 'nullable|string',
-            'valoracion' => 'nullable|integer|min:1|max:5',
-            'comentario' => 'nullable|string',
-            'favorito' => 'nullable|boolean'
+{
+    
+    $request->merge($request->json()->all());
 
-        ]);
+    $data = $request->validate([
+        'tipo' => 'required|string',
+        'api_id' => 'required|string',
+        'estado' => 'nullable|string',
+        'valoracion' => 'nullable|integer|min:1|max:5',
+        'comentario' => 'nullable|string',
+        'favorito' => 'nullable|boolean'
+    ]);
 
-        // Para obtener datos desde la API
-        if ($data['tipo'] === 'pelicula') {
-            $apiData = Http::get("https://api.themoviedb.org/3/movie/{$data['api_id']}", [
-                'api_key' => env('TMDB_KEY'),
-                'language' => 'es-ES'
-            ])->json();
+    
+    if ($data['tipo'] === 'pelicula') {
 
-            $contenidoData = [
-                'titulo' => $apiData['title'],
-                'tipo' => 'pelicula',
-                'fecha_lanzamiento' => $apiData['release_date'] ?? null,
-                'sinopsis' => $apiData['overview'] ?? null,
-                'categoria' => null,
-                'detalles' => [
-                    'poster' => $apiData['poster_path'] ?? null,
-                    'tmdb_id' => $data['api_id']
-                ]
-            ];
-        }
+        $apiData = Http::get("https://api.themoviedb.org/3/movie/{$data['api_id']}", [
+            'api_key' => env('TMDB_KEY'),
+            'language' => 'es-ES'
+        ])->json();
 
-        if ($data['tipo'] === 'libro') {
-            $apiData = Http::get("https://openlibrary.org/works/{$data['api_id']}.json")->json();
-            $coverId = $apiData['covers'][0] ?? null;
-            $thumbnail = $coverId
-                ? "https://covers.openlibrary.org/b/id/{$coverId}-L.jpg"
-                : null;
-            $descripcion = null;
-            if (isset($apiData['description'])) {
-                $descripcion = is_array($apiData['description'])
-                    ? ($apiData['description']['value'] ?? null)
-                    : $apiData['description'];
-            }
+        $contenidoData = [
+            'titulo' => $apiData['title'],
+            'tipo' => 'pelicula',
+            'fecha_lanzamiento' => $apiData['release_date'] ?? null,
+            'sinopsis' => $apiData['overview'] ?? null,
+            'categoria' => null,
+            'detalles' => [
+                'poster' => $apiData['poster_path'] ?? null,
+                'tmdb_id' => $data['api_id']
+            ]
+        ];
 
-            $contenidoData = [
-                'titulo' => $apiData['title'] ?? 'Título desconocido',
-                'tipo' => 'libro',
-                'fecha_lanzamiento' => $apiData['created']['value'] ?? null,
-                'sinopsis' => $descripcion,
-                'categoria' => $apiData['subjects'][0] ?? null,
-                'detalles' => [
-                    'thumbnail' => $thumbnail,
-                    'openlibrary_id' => $data['api_id']
-                ]
-            ];
-        }
-
-
-        // Guardar contenido en BD si no existe
         $contenido = Contenido::firstOrCreate(
-            ['titulo' => $contenidoData['titulo'], 'tipo' => $contenidoData['tipo']],
+            ['detalles->tmdb_id' => $data['api_id']],
             $contenidoData
         );
-
-        /*// Crear actividad
-        Actividad::create([
-            'user_id' => auth()->id(),
-            'contenido_id' => $contenido->id,
-            'estado' => $data['estado'],
-            'valoracion' => $data['valoracion'] ?? null,
-            'comentario' => $data['comentario'] ?? null
-        ]);*/
-        Actividad::updateOrCreate(
-            [
-                'user_id' => auth()->id(),
-                'contenido_id' => $contenido->id
-            ],
-            [
-                'estado' => $data['estado'] ?? $actividad->estado ?? 'no_visto',
-                'valoracion' => $data['valoracion'] ?? null,
-                'comentario' => $data['comentario'] ?? null,
-                'favorito' => $data['favorito'] ?? false
-            ]
-        );
-
-
-        return back();
     }
+
+    if ($data['tipo'] === 'libro') {
+
+        $apiData = Http::get("https://openlibrary.org/works/{$data['api_id']}.json")->json();
+
+        $coverId = $apiData['covers'][0] ?? null;
+        $thumbnail = $coverId
+            ? "https://covers.openlibrary.org/b/id/{$coverId}-L.jpg"
+            : null;
+
+        $descripcion = $apiData['description']['value']
+            ?? $apiData['description']
+            ?? null;
+
+        $contenidoData = [
+            'titulo' => $apiData['title'] ?? 'Título desconocido',
+            'tipo' => 'libro',
+            'fecha_lanzamiento' => $apiData['created']['value'] ?? null,
+            'sinopsis' => $descripcion,
+            'categoria' => $apiData['subjects'][0] ?? null,
+            'detalles' => [
+                'thumbnail' => $thumbnail,
+                'openlibrary_id' => $data['api_id']
+            ]
+        ];
+
+        $contenido = Contenido::firstOrCreate(
+            ['detalles->openlibrary_id' => $data['api_id']],
+            $contenidoData
+        );
+    }
+
+    Actividad::updateOrCreate(
+        [
+            'user_id' => auth()->id(),
+            'contenido_id' => $contenido->id
+        ],
+        [
+            'estado' => $data['estado'] ?? 'no_visto',
+            'valoracion' => $data['valoracion'] ?? null,
+            'comentario' => $data['comentario'] ?? null,
+            'favorito' => $data['favorito'] ?? false
+        ]
+    );
+
+    return response()->json(['ok' => true]);
+}
+
 
     /**
      * Display the specified resource.

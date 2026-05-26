@@ -19,9 +19,11 @@ Route::middleware('auth')->group(function () {
    
 
     //contenido
-        //index
+        //index de apis
      Route::get('/contenido', [ContenidoController::class, 'index'])
     ->name('contenido.index');
+    Route::get('/mis-contenidos', [ContenidoController::class, 'indexMios'])
+    ->name('contenido.mios.index');
         //de la api peli
     Route::get('/contenido/pelicula/{id}', [ContenidoController::class, 'showPeliculaAPI'])
     ->name('contenido.pelicula.show')
@@ -30,11 +32,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/contenido/libro/{id}', [ContenidoController::class, 'showLibroAPI'])
     ->name('contenido.libro.show')
     ->where('id', '.*');
-
         //si esta en la BD
-    Route::get('contenido/{contenido}',[ContenidoController::class, 'showMiContenido'])
-        ->name('contenido.show')
-        ->whereNumber('contenido');
+    Route::get('/contenido/mio/{id}', [ContenidoController::class, 'showMiContenido'])
+    ->name('contenido.mios.show')
+    ->whereNumber('id');
+
     
     //listas
         //ver todas las listas

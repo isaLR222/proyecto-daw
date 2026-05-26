@@ -88,10 +88,7 @@
                 },
 
                 async cargarMios() {
-    const res = await fetch("/api/mis-contenidos");
-    const data = await res.json();
-    console.log("Mios:", data);
-    this.resultados = data;
+    this.resultados = @json($mios ?? []);
 },
 
                 rutaShow(item) {
@@ -104,7 +101,7 @@
                     }
 
                     if (this.filtro === "Mios") {
-                        return `/contenido/${item.id}`;
+                        return `/contenido/mio/${item.id}`;
                     }
                 }
             },

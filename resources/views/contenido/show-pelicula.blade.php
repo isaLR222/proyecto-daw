@@ -66,16 +66,16 @@
     </div>
     <script>
         const PELICULA_DATA = {
-            tipo: "pelicula",
-            api_id: "{{ $pelicula['id'] }}",
-            titulo: "{{ $pelicula['titulo'] }}",
-            descripcion: `{{ $pelicula['descripcion'] }}`,
-            imagen: "{{ $pelicula['imagen'] }}",
-            fecha: "{{ $pelicula['fecha'] }}",
-            generos: @json($pelicula['generos'])
-        };
+    tipo: "pelicula",
+    api_id: @json($pelicula['id']),
+    titulo: @json($pelicula['titulo']),
+    descripcion: @json($pelicula['descripcion']),
+    imagen: @json($pelicula['imagen']),
+    fecha: @json($pelicula['fecha']),
+};
 
-        const ACTIVIDAD_INICIAL = @json($actividad);
+
+        const ACTIVIDAD_INICIAL = @json($actividad ?? []);
     </script>
 
     <script>
@@ -86,12 +86,12 @@
         createApp({
             data() {
                 return {
-                    estado: ACTIVIDAD_INICIAL?.estado ?? "no_visto",
-                    favorito: ACTIVIDAD_INICIAL?.favorito ?? false,
-                    rating: ACTIVIDAD_INICIAL?.valoracion ?? 0,
+                    estado: ACTIVIDAD_INICIAL.estado ?? "no_visto",
+                    favorito: ACTIVIDAD_INICIAL.favorito ?? false,
+                    rating: ACTIVIDAD_INICIAL.valoracion ?? 0,
                     hover: 0,
                     nuevoComentario: "",
-                    comentarios: ACTIVIDAD_INICIAL?.comentario ? [ACTIVIDAD_INICIAL.comentario] : []
+                    comentarios: ACTIVIDAD_INICIAL.comentario ? [ACTIVIDAD_INICIAL.comentario] : []
                 }
             },
             methods: {
@@ -131,8 +131,7 @@
 
                 publicarComentario() {
                     if (this.nuevoComentario.trim() === "") return;
-
-                    this.comentarios = [this.nuevoComentario];
+                    this.comentarios.push(this.nuevoComentario);
                     this.guardarActividad({
                         comentario: this.nuevoComentario
                     });

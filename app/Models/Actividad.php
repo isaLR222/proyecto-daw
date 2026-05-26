@@ -15,6 +15,7 @@ class Actividad extends Model
         'estado',
         'valoracion',
         'comentario',
+        'favorito',
     ];
 
     public function user()
