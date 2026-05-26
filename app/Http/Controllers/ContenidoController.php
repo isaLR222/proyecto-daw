@@ -149,70 +149,55 @@ public function showMiContenido($id)
 
     /* Mostrar película desde api*/
     public function showPeliculaAPI($id)
-    {
-        $apiKey = env('TMDB_KEY');
-        $url = "https://api.themoviedb.org/3/movie/{$id}?api_key={$apiKey}&language=es-ES";
-        $data = Http::get($url)->json();
-        if (!$data || (isset($data['success']) && $data['success'] === false)) {
-            abort(404, "Película no encontrada");
-        }
-        $pelicula = [
-            'id' => $data['id'],
-            'titulo' => $data['title'],
-            'descripcion' => $data['overview'],
-            'imagen' => "https://image.tmdb.org/t/p/w500{$data['poster_path']}",
-            'fecha' => $data['release_date'],
-            'generos' => array_column($data['genres'], 'name'),
-        ];
-        // Recuperar actividad previa del usuario
-        $actividad = Actividad::where('user_id', auth()->id())
-            ->whereHas('contenido', function ($q) use ($id) {
-                $q->where('detalles->tmdb_id', $id);
-            })
-            ->first();
-        return view('contenido.show-pelicula', [
-            'pelicula' => $pelicula,
-            'actividad' => $actividad
-        ]);
-    }
-
-    /* Mostrar libro desde api*/
-    public function showLibroAPI($id)
-    {
-       $id = ltrim($id, '/'); 
-    $url = "https://openlibrary.org/{$id}.json";
+{
+    $apiKey = env('TMDB_KEY');
+    $url = "https://api.themoviedb.org/3/movie/{$id}?api_key={$apiKey}&language=es-ES";
 
     $data = Http::get($url)->json();
 
-    if (!$data) {
-        abort(404, "Libro no encontrado");
+    if (!$data || (isset($data['success']) && $data['success'] === false)) {
+        abort(404, "Película no encontrada");
     }
 
-    $imagen = isset($data['covers'][0])
-        ? "https://covers.openlibrary.org/b/id/{$data['covers'][0]}-L.jpg"
-        : null;
-
-    $libro = [
-        'id' => $id,
-        'titulo' => $data['title'] ?? 'Sin título',
-        'descripcion' => $data['description']['value']
-            ?? $data['description']
-            ?? 'Sin descripción',
-        'imagen' => $imagen,
-        'generos' => $data['subjects'] ?? [],   
-        'fecha' => $data['created']['value'] ?? null,
+    $pelicula = [
+        'id' => $data['id'],
+        'titulo' => $data['title'],
+        'descripcion' => $data['overview'],
+        'imagen' => "https://image.tmdb.org/t/p/w500{$data['poster_path']}",
+        'fecha' => $data['release_date'],
+        'generos' => array_column($data['genres'], 'name'),
     ];
 
-    
-    $actividad = Actividad::where('user_id', auth()->id())
-    ->whereHas('contenido', function ($q) use ($id) {
-        $q->where('detalles->openlibrary_id', $id);
-    })
-    ->first();
+    $contenido = Contenido::firstOrCreate(
+        [
+            'user_id' => auth()->id(),
+            'tipo' => 'pelicula',
+            'titulo' => $pelicula['titulo'],
+        ],
+        [
+            'sinopsis' => $pelicula['descripcion'],
+            'fecha_lanzamiento' => $pelicula['fecha'],
+            'categoria' => null,
+            'detalles' => [
+                'tmdb_id' => $id,
+                'imagen' => $pelicula['imagen']
+            ]
+        ]
+    );
 
-    return view('contenido.show-libro', [
-        'libro' => $libro,
-        'actividad' => $actividad
-    ]);
+    $actividad = Actividad::firstOrCreate(
+        [
+            'user_id' => auth()->id(),
+            'contenido_id' => $contenido->id
+        ],
+        [
+            'estado' => 'no_visto',
+            'valoracion' => 0,
+            'comentario' => null,
+            'favorito' => false
+        ]
+    );
+
+    return view('contenido.show-pelicula', compact('pelicula', 'actividad'));
 }
 }
