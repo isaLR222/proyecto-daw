@@ -36,6 +36,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/contenido/mio/{id}', [ContenidoController::class, 'showMiContenido'])
     ->name('contenido.mios.show')
     ->whereNumber('id');
+        //eliminar contenido de la BD
+    Route::delete('/contenido/{id}', [ContenidoController::class, 'destroy'])
+    ->name('contenido.destroy');
 
     
     //listas

@@ -91,30 +91,30 @@ class ContenidoController extends Controller
             ];
         });
     }
-public function indexMios()
-{
-    $contenidos = Contenido::where('user_id', auth()->id())->get();
+    public function indexMios()
+    {
+        $contenidos = Contenido::where('user_id', auth()->id())->get();
 
-    return view('contenido.mios-index', compact('contenidos'));
-}
+        return view('contenido.mios-index', compact('contenidos'));
+    }
 
 
     /*acceder al contenido guardado en BD*/
     public function misContenidos()
-{
-    return response()->json(
-        Contenido::where('user_id', auth()->id())
-            ->get()
-            ->map(function ($c) {
-                return [
-                    'id' => $c->id,
-                    'titulo' => $c->titulo,
-                    'descripcion' => $c->sinopsis ?? 'Sin descripción',
-                    'imagen' => $c->detalles['imagen'] ?? '/img/no-image.png'
-                ];
-            })
-    );
-}
+    {
+        return response()->json(
+            Contenido::where('user_id', auth()->id())
+                ->get()
+                ->map(function ($c) {
+                    return [
+                        'id' => $c->id,
+                        'titulo' => $c->titulo,
+                        'descripcion' => $c->sinopsis ?? 'Sin descripción',
+                        'imagen' => $c->detalles['imagen'] ?? '/img/no-image.png'
+                    ];
+                })
+        );
+    }
 
 
 
@@ -136,68 +136,143 @@ public function indexMios()
     }
 
     /* Mostrar contenido guardado en BD */
-public function showMiContenido($id)
-{
-    $contenido = Contenido::where('user_id', auth()->id())
-        ->where('id', $id)
-        ->firstOrFail();
+    public function showMiContenido($id)
+    {
+        $contenido = Contenido::where('user_id', auth()->id())
+            ->where('id', $id)
+            ->firstOrFail();
 
-    return view('contenido.show-mi-contenido', compact('contenido'));
-}
+        return view('contenido.show-mi-contenido', compact('contenido'));
+    }
 
 
 
     /* Mostrar película desde api*/
     public function showPeliculaAPI($id)
-{
-    $apiKey = env('TMDB_KEY');
-    $url = "https://api.themoviedb.org/3/movie/{$id}?api_key={$apiKey}&language=es-ES";
+    {
+        $apiKey = env('TMDB_KEY');
+        $url = "https://api.themoviedb.org/3/movie/{$id}?api_key={$apiKey}&language=es-ES";
 
-    $data = Http::get($url)->json();
+        $data = Http::get($url)->json();
 
-    if (!$data || (isset($data['success']) && $data['success'] === false)) {
-        abort(404, "Película no encontrada");
-    }
+        if (!$data || (isset($data['success']) && $data['success'] === false)) {
+            abort(404, "Película no encontrada");
+        }
 
-    $pelicula = [
-        'id' => $data['id'],
-        'titulo' => $data['title'],
-        'descripcion' => $data['overview'],
-        'imagen' => "https://image.tmdb.org/t/p/w500{$data['poster_path']}",
-        'fecha' => $data['release_date'],
-        'generos' => array_column($data['genres'], 'name'),
-    ];
+        $pelicula = [
+            'id' => $data['id'],
+            'titulo' => $data['title'],
+            'descripcion' => $data['overview'],
+            'imagen' => "https://image.tmdb.org/t/p/w500{$data['poster_path']}",
+            'fecha' => $data['release_date'],
+            'generos' => array_column($data['genres'], 'name'),
+        ];
 
-    $contenido = Contenido::firstOrCreate(
-        [
-            'user_id' => auth()->id(),
-            'tipo' => 'pelicula',
-            'titulo' => $pelicula['titulo'],
-        ],
-        [
-            'sinopsis' => $pelicula['descripcion'],
-            'fecha_lanzamiento' => $pelicula['fecha'],
-            'categoria' => null,
-            'detalles' => [
-                'tmdb_id' => $id,
-                'imagen' => $pelicula['imagen']
+        $contenido = Contenido::firstOrCreate(
+            [
+                'user_id' => auth()->id(),
+                'tipo' => 'pelicula',
+                'titulo' => $pelicula['titulo'],
+            ],
+            [
+                'sinopsis' => $pelicula['descripcion'],
+                'fecha_lanzamiento' => $pelicula['fecha'],
+                'categoria' => null,
+                'detalles' => [
+                    'tmdb_id' => $id,
+                    'imagen' => $pelicula['imagen']
+                ]
             ]
-        ]
-    );
+        );
 
-    $actividad = Actividad::firstOrCreate(
-        [
-            'user_id' => auth()->id(),
-            'contenido_id' => $contenido->id
-        ],
-        [
-            'estado' => 'no_visto',
-            'valoracion' => 0,
-            'comentario' => null,
-            'favorito' => false
-        ]
-    );
+        $actividad = Actividad::firstOrCreate(
+            [
+                'user_id' => auth()->id(),
+                'contenido_id' => $contenido->id
+            ],
+            [
+                'estado' => 'no_visto',
+                'valoracion' => 0,
+                'comentario' => null,
+                'favorito' => false
+            ]
+        );
 
-    return view('contenido.show-pelicula', compact('pelicula', 'actividad'));
-}
+        return view('contenido.show-pelicula', compact('pelicula', 'actividad'));
+    }
+    public function showLibroAPI($id)
+    {
+        $id = ltrim($id, '/');
+        $url = "https://openlibrary.org/{$id}.json";
+
+        $data = Http::timeout(20)->get($url)->json();
+
+        if (!$data) {
+            abort(404, "Libro no encontrado");
+        }
+
+        $imagen = isset($data['covers'][0])
+            ? "https://covers.openlibrary.org/b/id/{$data['covers'][0]}-L.jpg"
+            : null;
+
+        $libro = [
+            'id' => $id,
+            'titulo' => $data['title'] ?? 'Sin título',
+            'descripcion' => $data['description']['value']
+                ?? $data['description']
+                ?? 'Sin descripción',
+            'imagen' => $imagen,
+            'generos' => $data['subjects'] ?? [],
+            'fecha' => $data['created']['value'] ?? null,
+        ];
+
+        // Buscar o crear contenido por openlibrary_id
+        $contenido = Contenido::firstOrCreate(
+            [
+                'user_id' => auth()->id(),
+                'tipo' => 'libro',
+                'detalles->openlibrary_id' => $id,
+            ],
+            [
+                'titulo' => $libro['titulo'],
+                'sinopsis' => $libro['descripcion'],
+                'fecha_lanzamiento' => $libro['fecha'],
+                'categoria' => null,
+                'detalles' => [
+                    'openlibrary_id' => $id,
+                    'imagen' => $libro['imagen']
+                ]
+            ]
+        );
+
+        // Actividad
+        $actividad = Actividad::firstOrCreate(
+            [
+                'user_id' => auth()->id(),
+                'contenido_id' => $contenido->id
+            ],
+            [
+                'estado' => 'no_visto',
+                'valoracion' => 0,
+                'comentario' => null,
+                'favorito' => false
+            ]
+        );
+
+        return view('contenido.show-libro', compact('libro', 'actividad'));
+    }
+    public function destroy($id)
+    {
+        $contenido = Contenido::where('user_id', auth()->id())
+            ->where('id', $id)
+            ->firstOrFail();
+
+        Actividad::where('contenido_id', $contenido->id)->delete();
+
+        $contenido->delete();
+
+        return redirect()
+            ->route('mios.index')
+            ->with('success', 'Contenido eliminado correctamente.');
+    }
 }
