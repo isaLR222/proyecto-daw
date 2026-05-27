@@ -3,7 +3,7 @@
 @section('title', 'Mis contenidos')
 
 @section('content')
-<h1 class="text-3xl font-bold mb-6">Mis contenidos</h1>
+<h1 class="text-3xl font-bold mb-6">Mi contenido</h1>
 
 <div class="grid grid-cols-4 gap-6">
     @forelse ($contenidos as $c)

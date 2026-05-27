@@ -67,6 +67,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('listas/{lista}',[ListaController::class, 'destroy'])
         ->name('listas.destroy')
         ->whereNumber('lista');
+        //añadir contenido de la BD
+    Route::post('/listas/{lista}/add', [ListaController::class, 'añadirContenidoBD'])
+    ->name('listas.add');
+
 
     //lActividad
         //Ver actividad usuario

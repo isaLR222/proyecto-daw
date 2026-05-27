@@ -14,7 +14,7 @@ class ListaController extends Controller
      */
     public function index()
     {
-        $listas=Lista::where('user_id', auth()->id())->get();
+        $listas = Lista::where('user_id', auth()->id())->get();
         return view('listas.index', compact('listas'));
     }
 
@@ -31,33 +31,53 @@ class ListaController extends Controller
      */
     public function store(Request $request)
     {
-        $data=$request->validate([
-            'nombre'=>'required|string|max:120',
-            'descripcion'=>'nullable|string',
+        $data = $request->validate([
+            'nombre' => 'required|string|max:120',
+            'descripcion' => 'nullable|string',
         ]);
 
-        $data['user_id']=auth()->id();
-        $lista= Lista::create($data);
+        $data['user_id'] = auth()->id();
+        $lista = Lista::create($data);
 
-        return redirect()->route('listas.show',$lista->id)->with('exito','lista creada');
+        return redirect()->route('listas.show', $lista->id)->with('exito', 'lista creada');
     }
 
     /**
      * Display the specified resource.
      */
     public function show(string $id)
-    {
-        $lista=Lista::where('user_id',auth()->id())->findOrFail($id);
-        $contenido=$lista->contenido; //por la relacion N:M
-        return view('listas.show', compact('lista','contenido'));
-    }
+{
+    $lista = Lista::where('user_id', auth()->id())->findOrFail($id);
+
+    // Contenido ya añadido a la lista
+    $contenido = $lista->contenido()->get()->map(function ($c) {
+        $c->detalles = is_string($c->detalles)
+            ? json_decode($c->detalles, true)
+            : $c->detalles;
+
+        return $c;
+    })->values();
+
+    // Contenidos disponibles para buscar
+    $contenidos = Contenido::select('id', 'titulo', 'detalles')->get()->map(function ($c) {
+        $c->detalles = is_string($c->detalles)
+            ? json_decode($c->detalles, true)
+            : $c->detalles;
+
+        return $c;
+    })->values();
+
+    return view('listas.show', compact('lista', 'contenido', 'contenidos'));
+}
+
+
 
     /**
      * Show the form for editing the specified resource.
      */
     public function edit(string $id)
     {
-         $lista = Lista::where('user_id', auth()->id())->findOrFail($id);
+        $lista = Lista::where('user_id', auth()->id())->findOrFail($id);
         return view('listas.edit', compact('lista'));
     }
 
@@ -89,7 +109,7 @@ class ListaController extends Controller
         return redirect()->route('listas.index')->with('exito', 'Lista eliminada.');
     }
 
-    public function añadirContenido(Request $request, $listaId)
+    /*public function añadirContenido(Request $request, $listaId)
     {
         $lista = Lista::where('user_id', auth()->id())->findOrFail($listaId);
 
@@ -143,6 +163,27 @@ class ListaController extends Controller
         $lista->contenido()->syncWithoutDetaching([$contenido->id]);
 
         return back()->with('success', 'Contenido añadido a la lista.');
+    }*/
+    public function añadirContenidoBD(Request $request, Lista $lista)
+    {
+        $request->validate([
+            'contenido_id' => 'required|exists:contenido,id',
+        ]);
+        // Evitar duplicados
+        if ($lista->contenido()->where('contenido_id', $request->contenido_id)->exists()) {
+            return response()->json([
+                'message' => 'El contenido ya está en la lista'
+            ], 409);
+        }
+        $orden = $lista->contenido()->count() + 1;
+        $lista->contenido()->attach($request->contenido_id, [
+            'orden' => $orden
+        ]);
+        $contenido = Contenido::find($request->contenido_id);
+        return response()->json([
+            'lista' => $lista,
+            'contenido' => $contenido
+        ]);
     }
 
     /**
