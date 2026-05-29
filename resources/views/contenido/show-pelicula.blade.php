@@ -89,6 +89,7 @@ const PELICULA_DATA = {
     descripcion: @json($pelicula['descripcion']),
     imagen: @json($pelicula['imagen']),
     fecha: @json($pelicula['fecha']),
+    generos: @json($pelicula['generos']),
 };
 
 const ACTIVIDAD_INICIAL = @json($actividad ?? []);

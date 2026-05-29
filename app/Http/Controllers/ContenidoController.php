@@ -168,16 +168,17 @@ class ContenidoController extends Controller
             'generos' => array_column($data['genres'], 'name'),
         ];
 
-        $contenido = Contenido::firstOrCreate(
+        $contenido = Contenido::updateOrCreate(
+            [
+                'detalles->tmdb_id' => $id
+            ],
             [
                 'user_id' => auth()->id(),
                 'tipo' => 'pelicula',
                 'titulo' => $pelicula['titulo'],
-            ],
-            [
                 'sinopsis' => $pelicula['descripcion'],
                 'fecha_lanzamiento' => $pelicula['fecha'],
-                'categoria' => null,
+                'categoria' => implode(', ', $pelicula['generos']),
                 'detalles' => [
                     'tmdb_id' => $id,
                     'imagen' => $pelicula['imagen']

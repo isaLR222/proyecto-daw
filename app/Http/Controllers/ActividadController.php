@@ -39,28 +39,33 @@ class ActividadController extends Controller
     
     if ($data['tipo'] === 'pelicula') {
 
-        $apiData = Http::get("https://api.themoviedb.org/3/movie/{$data['api_id']}", [
-            'api_key' => env('TMDB_KEY'),
-            'language' => 'es-ES'
-        ])->json();
+    $apiData = Http::get("https://api.themoviedb.org/3/movie/{$data['api_id']}", [
+        'api_key' => env('TMDB_KEY'),
+        'language' => 'es-ES'
+    ])->json();
 
-        $contenidoData = [
-            'titulo' => $apiData['title'],
-            'tipo' => 'pelicula',
-            'fecha_lanzamiento' => $apiData['release_date'] ?? null,
-            'sinopsis' => $apiData['overview'] ?? null,
-            'categoria' => null,
-            'detalles' => [
-                'poster' => $apiData['poster_path'] ?? null,
-                'tmdb_id' => $data['api_id']
-            ]
-        ];
+    $generos = isset($apiData['genres'])
+        ? implode(', ', array_column($apiData['genres'], 'name'))
+        : null;
 
-        $contenido = Contenido::firstOrCreate(
-            ['detalles->tmdb_id' => $data['api_id']],
-            $contenidoData
-        );
-    }
+    $contenidoData = [
+        'titulo' => $apiData['title'],
+        'tipo' => 'pelicula',
+        'fecha_lanzamiento' => $apiData['release_date'] ?? null,
+        'sinopsis' => $apiData['overview'] ?? null,
+        'categoria' => $generos,
+        'detalles' => [
+            'poster' => $apiData['poster_path'] ?? null,
+            'tmdb_id' => $data['api_id']
+        ]
+    ];
+
+    $contenido = Contenido::updateOrCreate(
+        ['detalles->tmdb_id' => $data['api_id']],
+        $contenidoData
+    );
+}
+
 
     if ($data['tipo'] === 'libro') {
 
