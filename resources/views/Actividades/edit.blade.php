@@ -4,21 +4,21 @@
 
 @section('content')
     <style>
-.rating label:has(input:checked) .estrella-rellena {
-    opacity: 1;
-}
+        .rating label:has(input:checked) .estrella-rellena {
+            opacity: 1;
+        }
 
-.rating label:has(input:checked) .estrella-vacia {
-    opacity: 0;
-}
+        .rating label:has(input:checked) .estrella-vacia {
+            opacity: 0;
+        }
 
-.rating label:has(input:checked) ~ label .estrella-rellena {
-    opacity: 1;
-}
+        .rating label:has(input:checked)~label .estrella-rellena {
+            opacity: 1;
+        }
 
-.rating label:has(input:checked) ~ label .estrella-vacia {
-    opacity: 0;
-}
+        .rating label:has(input:checked)~label .estrella-vacia {
+            opacity: 0;
+        }
     </style>
     <x-flecha-atras />
 
@@ -30,53 +30,50 @@
             @csrf
             @method('PUT')
 
-           <div class="flex items-start justify-between mb-4 gap-6">
+            <div class="flex items-start justify-between mb-4 gap-6">
 
-    {{-- Estado --}}
-    <div>
-        <label class="text-slate-300 font-semibold block mb-1">Estado</label>
-        <select name="estado" class="w-32 bg-gray-800 text-white px-4 py-2 rounded-lg shadow cursor-pointer">
-            <option value="no_visto" {{ $actividad->estado === 'no_visto' ? 'selected' : '' }}>No visto</option>
-            <option value="visto" {{ $actividad->estado === 'visto' ? 'selected' : '' }}>Visto</option>
-            <option value="viendo" {{ $actividad->estado === 'viendo' ? 'selected' : '' }}>Viendo</option>
-        </select>
-    </div>
+                {{-- estado --}}
+                <div>
+                    <label class="text-slate-300 font-semibold block mb-1">Estado</label>
+                    <select name="estado" class="w-32 bg-gray-800 text-white px-4 py-2 rounded-lg shadow cursor-pointer">
+                        <option value="no_visto" {{ $actividad->estado === 'no_visto' ? 'selected' : '' }}>No visto</option>
+                        <option value="visto" {{ $actividad->estado === 'visto' ? 'selected' : '' }}>Visto</option>
+                        <option value="viendo" {{ $actividad->estado === 'viendo' ? 'selected' : '' }}>Viendo</option>
+                    </select>
+                </div>
 
-    {{-- Valoración --}}
-    <div>
-        <label class="text-slate-300 font-semibold block mb-1">Valoración</label>
+                {{-- valoración --}}
+                <div>
+                    <label class="text-slate-300 font-semibold block mb-1">Valoración</label>
 
-        <div class="rating flex flex-row-reverse gap-1">
-    @for ($i = 5; $i >= 1; $i--)
-        <label class="cursor-pointer relative">
-            <input type="radio" name="valoracion" value="{{ $i }}" class="hidden peer"
-                {{ $actividad->valoracion == $i ? 'checked' : '' }}>    
+                    <div class="rating flex flex-row-reverse gap-1">
+                        @for ($i = 5; $i >= 1; $i--)
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="valoracion" value="{{ $i }}" class="hidden peer"
+                                    {{ $actividad->valoracion == $i ? 'checked' : '' }}>
 
-            <span class="estrella-vacia block">
-                <x-estrella-vacia />
-            </span>
+                                <span class="estrella-vacia block">
+                                    <x-estrella-vacia />
+                                </span>
 
-            <span class="estrella-rellena absolute inset-0 opacity-0 peer-checked:opacity-100">
-                <x-estrella-rellena />
-            </span>
-        </label>
-    @endfor
-</div>
+                                <span class="estrella-rellena absolute inset-0 opacity-0 peer-checked:opacity-100">
+                                    <x-estrella-rellena />
+                                </span>
+                            </label>
+                        @endfor
+                    </div>
 
-    </div>
+                </div>
 
-</div>
+            </div>
 
-
-
-
-            {{-- Comentario --}}
+            {{-- comentario --}}
             <div class="mb-4">
                 <label class="text-slate-300 font-semibold">Comentario</label>
                 <textarea name="comentario" rows="3" class="w-full bg-slate-800 text-white rounded-md mt-1">{{ old('comentario', $actividad->comentario) }}</textarea>
             </div>
 
-            {{-- Favorito --}}
+            {{-- favorito --}}
             <div class="mb-4 flex items-center gap-2">
                 <input type="checkbox" name="favorito" value="1"
                     {{ old('favorito', $actividad->favorito) ? 'checked' : 0 }}>
@@ -98,8 +95,3 @@
 
     </div>
 @endsection
-
-
-
-
-
