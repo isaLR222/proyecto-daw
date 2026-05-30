@@ -107,7 +107,8 @@ class ActividadController extends Controller
             'estado' => $data['estado'] ?? 'no_visto',
             'valoracion' => $data['valoracion'] ?? null,
             'comentario' => $data['comentario'] ?? null,
-            'favorito' => $data['favorito'] ?? false
+            'favorito' => $request->has('favorito')
+
         ]
     );
 
@@ -122,7 +123,7 @@ class ActividadController extends Controller
     {
         $actividad = Actividad::where('user_id', auth()->id())->with('contenido')->findOrFail($id);
 
-        return view('actividad.show', compact('actividad'));
+        return view('actividades.show', compact('actividad'));
     }
 
     /**
@@ -131,7 +132,7 @@ class ActividadController extends Controller
     public function edit(string $id)
     {
         $actividad = Actividad::where('user_id', auth()->id())->findOrFail($id);
-        return view('actividad.edit', compact('actividad'));
+        return view('actividades.edit', compact('actividad'));
     }
 
     /**
@@ -144,12 +145,18 @@ class ActividadController extends Controller
         $data = $request->validate([
             'estado' => 'required|string',
             'valoracion' => 'nullable|integer|min:1|max:5',
-            'comentario' => 'nullable|string'
+            'comentario' => 'nullable|string',
+            'favorito' => 'nullable|boolean'
         ]);
 
-        $actividad->update($data);
+        $actividad->update([
+    'estado' => $data['estado'],
+    'valoracion' => $data['valoracion'],
+    'comentario' => $data['comentario'],
+    'favorito' => $request->has('favorito'),
+]);
 
-        return redirect()->route('actividad.show', $actividad->id);
+        return redirect()->route('contenido.mios.show', $actividad->id);
     }
 
     /**
@@ -160,6 +167,6 @@ class ActividadController extends Controller
         $actividad = Actividad::where('user_id', auth()->id())->findOrFail($id);
         $actividad->delete();
 
-        return redirect()->route('actividad.index');
+        return redirect()->route('actividades.index');
     }
 }

@@ -5,14 +5,13 @@
 
         <div class="flex items-center gap-6">
 
-            {{-- NAV PRINCIPAL --}}
             <nav class="flex gap-6 items-center">
                 <a href="/" class="hover:underline">Inicio</a>
                 <a href="/listas" class="hover:underline">Listas</a>
-                <a href="{{ route('contenido.mios.index') }}" class="hover:underline">Mis contenidos</a>
+                <a href="{{ route('contenido.mios.index') }}" class="hover:underline">Mi contenido</a>
             </nav>
 
-            {{-- MENÚ DE USUARIO --}}
+            {{-- icono del usuario que al clickar se abre desplegable --}}
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" class="flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"

@@ -142,7 +142,12 @@ class ContenidoController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
-        return view('contenido.show-mi-contenido', compact('contenido'));
+        $actividad = Actividad::where('contenido_id', $contenido->id)
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->first();
+
+        return view('contenido.show-mi-contenido', compact('contenido', 'actividad'));
     }
 
 
