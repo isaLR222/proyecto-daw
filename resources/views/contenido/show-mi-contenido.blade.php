@@ -65,11 +65,6 @@
                         {{ $actividad->estado }}
                     </p>
 
-                    <p class="text-slate-300">
-                        <span class="font-semibold">Fecha:</span>
-                        {{ $actividad->created_at->format('d/m/Y H:i') }}
-                    </p>
-
                     <p class="text-slate-300 flex items-center gap-2">
                         <span class="font-semibold">Puntuación:</span>
 
@@ -79,9 +74,9 @@
 
                         @for ($i = 1; $i <= 5; $i++)
                             @if ($i <= $valor)
-                                <x-estrella-rellena class="text-yellow-400 w-6 h-6" />
+                                <x-estrella-rellena/>
                             @else
-                                <x-estrella-vacia class="text-yellow-400 w-6 h-6" />
+                                <x-estrella-vacia/>
                             @endif
                         @endfor
                     </p>
