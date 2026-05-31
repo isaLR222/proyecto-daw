@@ -23,15 +23,15 @@ La aplicación permite:
 - Búsqueda y filtrado por nombre.
 
 # Integración con APIs externas:
-TMDB (películas)
-OpenLibrary (libros)
+- TMDB (películas)
+- OpenLibrary (libros)
 
 # Tecnologías utilizadas
-PHP 8.2.12
-Laravel 12
-XAMPP v3.3.0
-MySQL
-Vue.js
+- PHP 8.2.12
+- Laravel 12
+- XAMPP v3.3.0
+- MySQL
+- Vue.js
 
 # Cómo descargar el proyecto
 1️. Clonar el repositorio
