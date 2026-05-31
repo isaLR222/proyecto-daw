@@ -10,14 +10,14 @@
         {{-- Contenido --}}
         <div class="p-6 bg-tarjeta border border-slate-700 rounded-xl shadow-lg">
 
-            
-    <div class="flex items-center justify-center gap-3 mb-6">
-        <h1 class="text-3xl font-bold text-center">{{ $contenido->titulo }}</h1>
 
-        @if ($actividad && $actividad->favorito == 1)
-            <x-corazon-relleno class="w-7 h-7 text-red-500" />
-        @endif
-    </div>
+            <div class="flex items-center justify-center gap-3 mb-6">
+                <h1 class="text-3xl font-bold text-center">{{ $contenido->titulo }}</h1>
+
+                @if ($actividad && $actividad->favorito == 1)
+                    <x-corazon-relleno class="w-7 h-7 text-red-500" />
+                @endif
+            </div>
 
             @if (isset($contenido->detalles['imagen']))
                 <div class="flex justify-center mb-6">
@@ -74,9 +74,9 @@
 
                         @for ($i = 1; $i <= 5; $i++)
                             @if ($i <= $valor)
-                                <x-estrella-rellena/>
+                                <x-estrella-rellena />
                             @else
-                                <x-estrella-vacia/>
+                                <x-estrella-vacia />
                             @endif
                         @endfor
                     </p>
@@ -95,9 +95,9 @@
                 </p>
             @endif
             <a href="{{ route('actividades.edit', $actividad->id) }}"
-   class="inline-block mt-4 px-4 py-2 bg-colorInputs text-white font-semibold rounded-lg hover:bg-[#C30B4E]">
-    Editar actividad
-</a>
+                class="inline-block mt-4 px-4 py-2 bg-colorInputs text-white font-semibold rounded-lg hover:bg-[#C30B4E]">
+                Editar actividad
+            </a>
 
 
         </div>
