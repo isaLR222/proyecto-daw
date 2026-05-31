@@ -15,9 +15,9 @@
                 <!-- select y corazon -->
                 <div class="mt-4 w-full flex items-center gap-2">
                     <select v-model="estado" class="w-32 bg-gray-800 text-white px-4 py-2 rounded-lg shadow cursor-pointer">
-                        <option value="no-visto">No leído</option>
-                        <option value="visto">Leído</option>
-                        <option value="viendo">Leyendo</option>
+                        <option value="no_visto">No visto</option>
+                        <option value="visto">Visto</option>
+                        <option value="viendo">Viendo</option>
                     </select>
 
                     <button @click="toggleFavorito" class="hover:scale-110 transition">

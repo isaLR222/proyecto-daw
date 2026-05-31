@@ -7,7 +7,6 @@
         .rating label:has(input:checked) .estrella-rellena {
             opacity: 1;
         }
-
         .rating label:has(input:checked) .estrella-vacia {
             opacity: 0;
         }
@@ -81,12 +80,12 @@
             </div>
 
             <div class="flex justify-between mt-6">
-                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                <button type="submit" class="px-4 py-2 bg-colorInputs text-white rounded-lg">
                     Guardar cambios
                 </button>
 
                 <a href="{{ route('contenido.mios.show', $actividad->id) }}"
-                    class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700">
+                    class="px-4 py-2 bg-slate-600 text-white rounded-lg">
                     Cancelar
                 </a>
             </div>

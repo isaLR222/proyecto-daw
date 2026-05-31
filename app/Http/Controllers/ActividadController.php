@@ -24,79 +24,81 @@ class ActividadController extends Controller
      */
     public function store(Request $request)
 {
-    
-    $request->merge($request->json()->all());
+    $data = $request->json()->all();
 
-    $data = $request->validate([
+    $validated = validator($data, [
         'tipo' => 'required|string',
-        'api_id' => 'required|string',
+        'api_id' => 'required',
         'estado' => 'nullable|string',
         'valoracion' => 'nullable|integer|min:1|max:5',
         'comentario' => 'nullable|string',
         'favorito' => 'nullable|boolean'
-    ]);
+    ])->validate();
 
-    
-    if ($data['tipo'] === 'pelicula') {
-
-    $apiData = Http::get("https://api.themoviedb.org/3/movie/{$data['api_id']}", [
-        'api_key' => env('TMDB_KEY'),
-        'language' => 'es-ES'
-    ])->json();
-
-    $generos = isset($apiData['genres'])
-        ? implode(', ', array_column($apiData['genres'], 'name'))
-        : null;
-
-    $contenidoData = [
-        'titulo' => $apiData['title'],
-        'tipo' => 'pelicula',
-        'fecha_lanzamiento' => $apiData['release_date'] ?? null,
-        'sinopsis' => $apiData['overview'] ?? null,
-        'categoria' => $generos,
-        'detalles' => [
-            'poster' => $apiData['poster_path'] ?? null,
-            'tmdb_id' => $data['api_id']
-        ]
-    ];
-
-    $contenido = Contenido::updateOrCreate(
-        ['detalles->tmdb_id' => $data['api_id']],
-        $contenidoData
-    );
-}
-
-
-    if ($data['tipo'] === 'libro') {
-
-        $apiData = Http::get("https://openlibrary.org/works/{$data['api_id']}.json")->json();
-
-        $coverId = $apiData['covers'][0] ?? null;
-        $thumbnail = $coverId
-            ? "https://covers.openlibrary.org/b/id/{$coverId}-L.jpg"
-            : null;
-
-        $descripcion = $apiData['description']['value']
-            ?? $apiData['description']
-            ?? null;
-
-        $contenidoData = [
-            'titulo' => $apiData['title'] ?? 'Título desconocido',
-            'tipo' => 'libro',
-            'fecha_lanzamiento' => $apiData['created']['value'] ?? null,
-            'sinopsis' => $descripcion,
-            'categoria' => $apiData['subjects'][0] ?? null,
-            'detalles' => [
-                'thumbnail' => $thumbnail,
-                'openlibrary_id' => $data['api_id']
-            ]
-        ];
-
-        $contenido = Contenido::firstOrCreate(
-            ['detalles->openlibrary_id' => $data['api_id']],
-            $contenidoData
-        );
+    // Buscar contenido existente por ID de API
+    if ($validated['tipo'] === 'pelicula') {
+        $contenido = Contenido::where('detalles->tmdb_id', $validated['api_id'])->first();
+    } else {
+        $contenido = Contenido::where('detalles->openlibrary_id', $validated['api_id'])->first();
     }
+
+    // Si no existe, crearlo
+    if (!$contenido) {
+        if ($validated['tipo'] === 'pelicula') {
+
+            $apiData = Http::get("https://api.themoviedb.org/3/movie/{$validated['api_id']}", [
+                'api_key' => env('TMDB_KEY'),
+                'language' => 'es-ES'
+            ])->json();
+
+            $contenidoData = [
+                'titulo' => $apiData['title'],
+                'tipo' => 'pelicula',
+                'fecha_lanzamiento' => $apiData['release_date'] ?? null,
+                'sinopsis' => $apiData['overview'] ?? null,
+                'categoria' => isset($apiData['genres'])
+                    ? implode(', ', array_column($apiData['genres'], 'name'))
+                    : null,
+                'detalles' => [
+                    'poster' => $apiData['poster_path'] ?? null,
+                    'tmdb_id' => $validated['api_id']
+                ]
+            ];
+        }
+
+        if ($validated['tipo'] === 'libro') {
+
+            $apiData = Http::get("https://openlibrary.org/works/{$validated['api_id']}.json")->json();
+
+            $coverId = $apiData['covers'][0] ?? null;
+            $thumbnail = $coverId
+                ? "https://covers.openlibrary.org/b/id/{$coverId}-L.jpg"
+                : null;
+
+            $descripcion = $apiData['description']['value']
+                ?? $apiData['description']
+                ?? null;
+
+            $contenidoData = [
+                'titulo' => $apiData['title'] ?? 'Título desconocido',
+                'tipo' => 'libro',
+                'fecha_lanzamiento' => $apiData['created']['value'] ?? null,
+                'sinopsis' => $descripcion,
+                'categoria' => $apiData['subjects'][0] ?? null,
+                'detalles' => [
+                    'thumbnail' => $thumbnail,
+                    'openlibrary_id' => $validated['api_id']
+                ]
+            ];
+        }
+
+        $contenido = Contenido::create($contenidoData);
+    }
+
+    // buscar la actividad que haya
+    $actividad = Actividad::where('user_id', auth()->id())
+        ->where('contenido_id', $contenido->id)
+        ->first();
 
     Actividad::updateOrCreate(
         [
@@ -104,11 +106,12 @@ class ActividadController extends Controller
             'contenido_id' => $contenido->id
         ],
         [
-            'estado' => $data['estado'] ?? 'no_visto',
-            'valoracion' => $data['valoracion'] ?? null,
-            'comentario' => $data['comentario'] ?? null,
-            'favorito' => $request->has('favorito')
-
+            'estado' => $validated['estado'] ?? ($actividad->estado ?? 'no_visto'),
+            'valoracion' => $validated['valoracion'] ?? ($actividad->valoracion ?? null),
+            'favorito' => $validated['favorito'] ?? ($actividad->favorito ?? false),
+            'comentario' => array_key_exists('comentario', $validated)
+                ? $validated['comentario']
+                : ($actividad->comentario ?? null)
         ]
     );
 
@@ -123,7 +126,7 @@ class ActividadController extends Controller
     {
         $actividad = Actividad::where('user_id', auth()->id())->with('contenido')->findOrFail($id);
 
-        return view('actividades.show', compact('actividad'));
+        return view('actividad.show', compact('actividad'));
     }
 
     /**
@@ -149,12 +152,7 @@ class ActividadController extends Controller
             'favorito' => 'nullable|boolean'
         ]);
 
-        $actividad->update([
-    'estado' => $data['estado'],
-    'valoracion' => $data['valoracion'],
-    'comentario' => $data['comentario'],
-    'favorito' => $request->has('favorito'),
-]);
+        $actividad->update($data);
 
         return redirect()->route('contenido.mios.show', $actividad->id);
     }
@@ -167,6 +165,17 @@ class ActividadController extends Controller
         $actividad = Actividad::where('user_id', auth()->id())->findOrFail($id);
         $actividad->delete();
 
-        return redirect()->route('actividades.index');
+        return redirect()->route('actividad.index');
     }
+
+    public function favoritos()
+{
+    $favoritos = Actividad::with('contenido')
+        ->where('user_id', auth()->id())
+        ->where('favorito', true)
+        ->get();
+
+    return view('actividades.favoritos', compact('favoritos'));
+}
+
 }

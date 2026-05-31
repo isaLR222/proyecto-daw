@@ -95,6 +95,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('actividad/{actividad}',[ActividadController::class, 'destroy'])
         ->name('actividades.destroy')
         ->whereNumber('actividad');
+        //favoritos
+    Route::get('/favoritos', [ActividadController::class, 'favoritos'])->name('favoritos.index');
+
     
     //perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

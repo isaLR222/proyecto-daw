@@ -36,6 +36,19 @@ class ContenidoController extends Controller
 
         return view('contenido.index', compact('filtro', 'peliculas', 'libros', 'mios'));
     }
+private function getGenerosTMDB() //para que funcione filtro de generos
+{
+    $apiKey = env('TMDB_KEY');
+
+    $response = Http::get('https://api.themoviedb.org/3/genre/movie/list', [
+        'api_key' => $apiKey,
+        'language' => 'es-ES'
+    ])->json();
+
+    return collect($response['genres'] ?? [])
+        ->pluck('name', 'id')
+        ->toArray();
+}
 
     /*api películas*/
     public function peliculas()
@@ -43,32 +56,42 @@ class ContenidoController extends Controller
         return response()->json($this->getPeliculas());
     }
 
-    private function getPeliculas()
-    {
-        $apiKey = env('TMDB_KEY');
-        $peliculas = collect();
+   private function getPeliculas()
+{
+    $apiKey = env('TMDB_KEY');
+    $peliculas = collect();
 
-        for ($page = 1; $page <= 5; $page++) {
-            $response = Http::get('https://api.themoviedb.org/3/movie/popular', [
-                'api_key' => $apiKey,
-                'language' => 'es-ES',
-                'page' => $page
-            ])->json();
+    $generosTMDB = $this->getGenerosTMDB();
 
-            $peliculas = $peliculas->merge($response['results'] ?? []);
-        }
+    for ($page = 1; $page <= 5; $page++) {
+        $response = Http::get('https://api.themoviedb.org/3/movie/popular', [
+            'api_key' => $apiKey,
+            'language' => 'es-ES',
+            'page' => $page
+        ])->json();
 
-        return $peliculas->map(function ($p) {
-            return [
-                'id' => $p['id'],
-                'titulo' => $p['title'],
-                'descripcion' => $p['overview'],
-                'imagen' => $p['poster_path']
-                    ? "https://image.tmdb.org/t/p/w500{$p['poster_path']}"
-                    : null
-            ];
-        });
+        $peliculas = $peliculas->merge($response['results'] ?? []);
     }
+
+    return $peliculas->map(function ($p) use ($generosTMDB) {
+        $generos = collect($p['genre_ids'] ?? [])
+            ->map(fn($id) => $generosTMDB[$id] ?? null)
+            ->filter()
+            ->values()
+            ->toArray();
+
+        return [
+            'id' => $p['id'],
+            'titulo' => $p['title'],
+            'descripcion' => $p['overview'],
+            'imagen' => $p['poster_path']
+                ? "https://image.tmdb.org/t/p/w500{$p['poster_path']}"
+                : null,
+            'genero' => $generos[0] ?? null
+        ];
+    });
+}
+
     /*api libros*/
     public function libros()
     {
@@ -87,7 +110,8 @@ class ContenidoController extends Controller
                 'titulo' => $d['title'] ?? 'Sin título',
                 'imagen' => isset($d['cover_i'])
                     ? "https://covers.openlibrary.org/b/id/{$d['cover_i']}-L.jpg"
-                    : null
+                    : null,
+                'genero' => $d['subject_facet'][0] ?? null
             ];
         });
     }
@@ -278,7 +302,6 @@ class ContenidoController extends Controller
         $contenido->delete();
 
         return redirect()
-            ->route('mios.index')
-            ->with('success', 'Contenido eliminado correctamente.');
+            ->route('contenido.mios.index');
     }
 }
