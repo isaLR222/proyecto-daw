@@ -3,24 +3,24 @@ Aplicación web diseñada como un diario personal de visualización y lectura, d
 
 # De qué se trata
 La aplicación permite:
--- Consultar información de películas y libros obtenida desde APIs externas.
--- Llevar un registro personal de contenido visto o leído.
--- Crear listas personalizadas y gestionar favoritos.
--- Añadir valoraciones mediante estrellas y comentarios.
+- Consultar información de películas y libros obtenida desde APIs externas.
+- Llevar un registro personal de contenido visto o leído.
+- Crear listas personalizadas y gestionar favoritos.
+- Añadir valoraciones mediante estrellas y comentarios.
 
 # Funcionalidades
--- Visualización de contenido: imagen, descripción, género, fecha, etc.
--- Sistema de valoraciones:
--- Estrellas
--- Comentarios
--- Añadir a favoritos
--- Estados: visto, viendo, no visto 
+- Visualización de contenido: imagen, descripción, género, fecha, etc.
+- Sistema de valoraciones:
+- Estrellas
+- Comentarios
+- Añadir a favoritos
+- Estados: visto, viendo, no visto 
 
 # Gestión de listas:
--- Crear
--- Editar
--- Eliminar
--- Búsqueda y filtrado por nombre.
+- Crear
+- Editar
+- Eliminar
+- Búsqueda y filtrado por nombre.
 
 # Integración con APIs externas:
 TMDB (películas)
