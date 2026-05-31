@@ -186,9 +186,7 @@ class ListaController extends Controller
         ]);
     }
 
-    /**
-     * Quitar contenido de una lista.
-     */
+    /* Quitar contenido de una lista.*/
     public function quitarContenido($listaId, $contenidoId)
     {
         $lista = Lista::where('user_id', auth()->id())->findOrFail($listaId);

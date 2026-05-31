@@ -28,10 +28,6 @@ class ContenidoController extends Controller
             case 'libros':
                 $libros = $this->getLibros();
                 break;
-
-            case 'mios':
-                $mios = Contenido::where('user_id', auth()->id())->get();
-                break;
         }
 
         return view('contenido.index', compact('filtro', 'peliculas', 'libros', 'mios'));
@@ -143,7 +139,7 @@ private function getGenerosTMDB() //para que funcione filtro de generos
 
 
     /*Guardar contenido desde API*/
-    public function guardarDesdeAPI(Request $request)
+    /*public function guardarDesdeAPI(Request $request)
     {
         $data = $request->validate([
             'titulo' => 'required|string',
@@ -157,7 +153,7 @@ private function getGenerosTMDB() //para que funcione filtro de generos
         Contenido::create($data);
 
         return redirect()->route('index')->with('success', 'Contenido añadido a tu biblioteca.');
-    }
+    }*/
 
     /* Mostrar contenido guardado en BD */
     public function showMiContenido($id)
