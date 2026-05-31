@@ -1,7 +1,7 @@
 <header class="w-full bg-tarjeta shadow-lg">
     <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
 
-        <h1 class="text-2xl font-bold">Proyecto</h1>
+        <h1 class="text-2xl font-bold">Aplicación web de gestión de libros y películas</h1>
 
         <div class="flex items-center gap-6">
 
